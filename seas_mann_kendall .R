@@ -237,7 +237,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
       theme(plot.title = element_text(hjust = 0.5, size = 12),
             plot.subtitle =  element_text(hjust = 0.5),
             axis.text.x = element_text(angle = 50, hjust = 1)) +
-      guides(color = guide_legend(title = "Month"))
+      guides(color = guide_legend(title = "Month"), order = 1)
    
     #graph no trend values
     if(sdadm_month_average$significance[1] == "No Trend"){
@@ -267,7 +267,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
                                 xend = max(sdadm_month_average$year+0.5), yend = SK.max, linetype = "Trend"),
                                 size = 1.05, color = "gray49") +
         scale_linetype_manual(values=c("dashed")) +
-        guides(linetype=guide_legend(title = element_blank()))
+        guides(linetype=guide_legend(title = element_blank(), order = 2))
       
       
     }
