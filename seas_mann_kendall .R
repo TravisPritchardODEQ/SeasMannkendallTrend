@@ -225,7 +225,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
     
     p <- ggplot(data = sdadm_month_average)+
       geom_point(aes(x = year, y = sdadm, color = factor(moname)), size = 2) +
-      scale_x_continuous(breaks = unique(sdadm_month_average$year),
+      scale_x_continuous(breaks = seq(min(sdadm_month_average$year), max(sdadm_month_average$year),1),
                          minor_breaks = 1) +
       scale_color_brewer(palette="Set1") +
       coord_cartesian(ylim = c(12,30)) +
