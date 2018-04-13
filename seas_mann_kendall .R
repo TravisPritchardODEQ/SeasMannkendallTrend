@@ -196,7 +196,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
              y = strd -  0.5,
              colour = "red", size = 3.5)+
     labs(title = "7 Day Average Daily Maximum Temperature",
-         subtitle = paste0(unique(sdadm_raw_trend$SiteDescription)[j],"- ",sdadm_box_plot$moname[[1]]),
+         subtitle =  unique(sdadm_raw_trend$SiteDescription)[j],
          x = "Year",
          y = "Temperature (degrees C)")+
     theme_bw()+
