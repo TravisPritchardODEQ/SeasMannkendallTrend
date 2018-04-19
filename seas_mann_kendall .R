@@ -153,7 +153,10 @@ write.csv(kendall_results, "Umpqua ref seasonal mann kendall results.csv", row.n
 
 #join trend analysis to data
 sdadm_trend <- sdadm %>%
-  left_join(kendall_results, by = "SiteID")
+  left_join(kendall_results, by = "SiteID") %>%
+  left_join(sdadm_count, by = c("SiteID", "year", "month")) %>%
+  filter(exclude == "no") %>%
+  select(-exclude)
 
 #set up some data for graphing
 sdadm_raw_trend <-t_results %>%
@@ -165,7 +168,11 @@ sdadm_raw_trend <-t_results %>%
          moname = month.name[month]) %>%
   left_join(kendall_results, by = "SiteID") %>%
   left_join(tmp_strd, by = "SiteID") %>%
-  filter(month(date) == 7 | month(date) == 8)
+  filter(month(date) == 7 | month(date) == 8) %>%
+  left_join(sdadm_count, by = c("SiteID", "year", "month")) %>%
+  filter(exclude == "no") %>%
+  select(-exclude)
+  
 
 
 
