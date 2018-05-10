@@ -5,8 +5,6 @@ library(zoo)
 library(readxl)
 
 
-#Git test
-
 # 4/5/2018
 
 # This script takes 7DMADMAX data exported from volWQdb and 
