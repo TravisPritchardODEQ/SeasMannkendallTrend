@@ -3,6 +3,11 @@ library(lubridate)
 library(wql)
 library(zoo)
 library(readxl)
+library(AWQMSdata)
+
+
+# 2/1/2019
+#Modified to use AWQMS data
 
 
 # 4/5/2018
@@ -36,10 +41,17 @@ library(readxl)
 
 
 #Import t_results export from database
-t_results <- read.csv("PUR_t_result.csv", stringsAsFactors = FALSE)
+t_results <- AWQMS_Data(startdate = '1949-09-15', 
+                        enddate = '2019-02-01', 
+                        station = c('30143-ORDEQ', '30147-ORDEQ', 
+                                    '30154-ORDEQ', '30161-ORDEQ', 
+                                    '37477-ORDEQ'), 
+                        char = c('Temperature, water') , 
+                        stat_base = c('7DADM') , 
+                        crit_codes = TRUE)
 
 
-tmp_strd <- read.csv("Ump_temp_strd.csv")
+#tmp_strd <- read.csv("Ump_temp_strd.csv")
 
 # Load critical tau values to assess signifigance
 load("tau_crit_values.Rdata")
@@ -57,47 +69,48 @@ wql_kendall_list <- list()
 
 #crate table with average SDADM per month
 sdadm <- t_results %>%
-  filter(ORDEQ_DQL != "C") %>%
-  mutate(date = mdy_hm(AnalyticalStartTime),
+  filter(QualifierAbbr %in% c("DQL=A", "DQL=B") | 
+           is.na(QualifierAbbr)) %>%
+  mutate(date = ymd(SampleStartDate),
          month = month(date),  
          yrmon = as.yearmon(date), 
          year = year(date)) %>%
-  group_by(SiteID, year, month) %>%
-  summarise(sdadm = mean(Result),
+  group_by(MLocID, year, month) %>%
+  summarise(sdadm = mean(Result_Numeric),
             count = n()) %>%
   ungroup() %>%
-  complete(SiteID, year, month) %>%
+  complete(MLocID, year, month) %>%
   filter(month == 7 | month == 8)
 
 # sdadm_wide <- sdadm %>%
-#   select(SiteID, year, month, sdadm) %>%
+#   select(MLocID, year, month, sdadm) %>%
 #   spread(month, sdadm)
 
 sdadm_count <- sdadm %>%
   mutate(mo_days = days_in_month(month),
          diff = mo_days - count,
-         exclude = ifelse(diff <= 1, "no", "yes")) %>%
+         exclude = ifelse(diff > 1 | is.na(sdadm), "yes", "no")) %>%
   filter(month != 10) %>%
-  select(SiteID, year, month, exclude)
+  select(MLocID, year, month, exclude)
 
 #add exclusion determination and filter out months to exclude
 #format toable to fit WQdata input format
 sdadm_assess <- sdadm %>%
-  left_join(sdadm_count, by = c("SiteID", "year", "month"))%>%
+  left_join(sdadm_count, by = c("MLocID", "year", "month"))%>%
   filter(exclude == "no") %>%
-  select(SiteID, year, month, sdadm) %>%
+  select(MLocID, year, month, sdadm) %>%
   mutate(date = paste0(year, "-", month, "-01")) %>%
   mutate(date = ymd(date)) %>%
   mutate(depth = 1,
          variable = as.factor("TEMP")) %>%
-  select(date, SiteID, depth, variable, sdadm) %>%
+  select(date, MLocID, depth, variable, sdadm) %>%
   rename(value = sdadm,
-         site = SiteID)
+         site = MLocID)
 
 # Run Seasonal Mann-Kendall Trend analysis --------------------------------
 
 
-# for loop to process each siteID
+# for loop to process each MLocID
 for(i in 1:length(unique(sdadm_assess$site))){
   
   #select unique site ID and arrange in chonological order
@@ -110,13 +123,13 @@ for(i in 1:length(unique(sdadm_assess$site))){
                         time.format = "%y-%m-%d")
  
   #create time series
-  timeseries <- tsMake(wqdataframe, focus= paste0("s",unique(sdadm_assess$site)[i]))
+  timeseries <- tsMake(wqdataframe, focus= gsub("-", ".", paste0("s",unique(sdadm_assess$site)[i])))
   
   res <- seaKen(timeseries)
   
-  #save results as a dataframe and add siteID and n
+  #save results as a dataframe and add MLocID and n
   df <- data.frame(as.list(unclass(res))) %>%
-    mutate(SiteID = unique(sdadm_assess$site)[i],
+    mutate(MLocID = unique(sdadm_assess$site)[i],
            n = length(timeseries))
   
   
@@ -139,7 +152,7 @@ kendall_results <- kendall_results %>%
   mutate(significance = ifelse(p.value < 0.10 & sen.slope < 0, "Signifigant (-)", 
                                ifelse(p.value < 0.10 & sen.slope > 0, "Signifigant (+)",
                                       "No Trend"))) %>%
-  select(SiteID, significance, p.value, sen.slope)
+  select(MLocID, significance, p.value, sen.slope)
 
 
 write.csv(kendall_results, "Umpqua ref seasonal mann kendall results.csv", row.names = FALSE)
@@ -151,23 +164,24 @@ write.csv(kendall_results, "Umpqua ref seasonal mann kendall results.csv", row.n
 
 #join trend analysis to data
 sdadm_trend <- sdadm %>%
-  left_join(kendall_results, by = "SiteID") %>%
-  left_join(sdadm_count, by = c("SiteID", "year", "month")) %>%
+  left_join(kendall_results, by = "MLocID") %>%
+  left_join(sdadm_count, by = c("MLocID", "year", "month")) %>%
   filter(exclude == "no") %>%
   select(-exclude)
 
 #set up some data for graphing
 sdadm_raw_trend <-t_results %>%
-  filter(ORDEQ_DQL != "C") %>%
-  mutate(date = mdy_hm(AnalyticalStartTime),
+  filter(QualifierAbbr %in% c("DQL=A", "DQL=B") | 
+     is.na(QualifierAbbr)) %>%
+  mutate(date = ymd(SampleStartDate),
          month = month(date),  
          yrmon = as.yearmon(date), 
          year = year(date),
          moname = month.name[month]) %>%
-  left_join(kendall_results, by = "SiteID") %>%
-  left_join(tmp_strd, by = "SiteID") %>%
+  left_join(kendall_results, by = "MLocID") %>%
+  left_join(Temp_crit, by = c("FishCode" = "FishUse_code")) %>%
   filter(month(date) == 7 | month(date) == 8) %>%
-  left_join(sdadm_count, by = c("SiteID", "year", "month")) %>%
+  left_join(sdadm_count, by = c("MLocID", "year", "month")) %>%
   filter(exclude == "no") %>%
   select(-exclude)
   
@@ -179,17 +193,17 @@ sdadm_raw_trend <-t_results %>%
 
 
 
-for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
+for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
   
 #box plots
   sdadm_box_plot <- sdadm_raw_trend %>%
-    filter(SiteID == unique(sdadm_raw_trend$SiteID)[j]) %>%
+    filter(MLocID == unique(sdadm_raw_trend$MLocID)[j]) %>%
     filter(month == 7 | month(date) == 8)
   
-  strd <- sdadm_box_plot$temp_strd[[1]]
+  strd <- sdadm_box_plot$Temp_Criteria[[1]]
   
   
-  box <- ggplot(sdadm_box_plot, aes(x = year, y = Result, group = factor(yrmon))) +
+  box <- ggplot(sdadm_box_plot, aes(x = year, y = Result_Numeric, group = factor(yrmon))) +
     geom_boxplot(aes(fill = factor(moname))) +
     scale_fill_brewer(palette="Set1") +
     scale_x_continuous(breaks = seq(min(sdadm_box_plot$year), max(sdadm_box_plot$year, by = 3)), 
@@ -214,7 +228,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
   
   
     
-    ggsave(box, file=paste("Graphs/Box/",unique(sdadm_raw_trend$SiteID)[j], "- Box.png"), 
+    ggsave(box, file=paste("Graphs/Box/",unique(sdadm_raw_trend$MLocID)[j], "- Box.png"), 
            width = 8, height = 5, units = c("in"))
     
    
@@ -222,7 +236,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
     
      #point graph
     sdadm_month_average <- sdadm_trend %>%
-      filter(SiteID == unique(sdadm_raw_trend$SiteID)[j]) %>%
+      filter(MLocID == unique(sdadm_raw_trend$MLocID)[j]) %>%
       mutate(yearmon = as.Date(paste0(year,"-",month,"-1"))) %>%
       mutate(moname = month.name[month]) %>%
       filter(!is.na(sdadm))
@@ -263,7 +277,7 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
       
       
       #plot trend line. This is taken from the coho trends process
-      slope <- kendall_results[kendall_results$SiteID == unique(sdadm_raw_trend$SiteID)[j], "sen.slope"]
+      slope <- kendall_results[kendall_results$MLocID == unique(sdadm_raw_trend$MLocID)[j], "sen.slope"]
       x.delta <- as.numeric((max(sdadm_month_average$year) - min(sdadm_month_average$year)))/2
       SK.min <- mean(sdadm_month_average$sdadm, na.rm = TRUE) - x.delta*slope
       SK.max <- mean(sdadm_month_average$sdadm, na.rm = TRUE) + x.delta*slope
@@ -282,11 +296,11 @@ for(j in 1:length(unique(sdadm_raw_trend$SiteID))){
    
 
     
-    ggsave(p, file=paste("Graphs/Average/",unique(sdadm_raw_trend$SiteID)[j], "- average.png"), 
+    ggsave(p, file=paste("Graphs/Average/",unique(sdadm_raw_trend$MLocID)[j], "- average.png"), 
            width = 8, height = 5, units = c("in"))
     
 
-  } #end of SiteID loop
+  } #end of MLocID loop
   
   
   
