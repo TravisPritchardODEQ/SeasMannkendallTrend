@@ -7,7 +7,7 @@ library(AWQMSdata)
 
 
 # 2/1/2019
-#Modified to use AWQMS data
+#Modified to use data pulled directly from AWQMS
 
 
 # 4/5/2018
@@ -59,7 +59,6 @@ load("tau_crit_values.Rdata")
 
 #create empty list to acept test results
 kendall_list <- list()
-wql_kendall_list <- list()
 
 
 
