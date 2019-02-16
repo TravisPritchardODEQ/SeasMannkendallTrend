@@ -6,6 +6,18 @@ library(readxl)
 library(AWQMSdata)
 
 
+
+
+# Load variables ----------------------------------------------------------
+
+startdate = '1949-09-15'
+enddate = '2019-02-01'
+
+stations = c('30143-ORDEQ', '30147-ORDEQ', 
+             '30154-ORDEQ', '30161-ORDEQ', 
+             '37477-ORDEQ')
+
+
 # 2/1/2019
 #Modified to use data pulled directly from AWQMS
 
@@ -41,11 +53,9 @@ library(AWQMSdata)
 
 
 #Import t_results export from database
-t_results <- AWQMS_Data(startdate = '1949-09-15', 
-                        enddate = '2019-02-01', 
-                        station = c('30143-ORDEQ', '30147-ORDEQ', 
-                                    '30154-ORDEQ', '30161-ORDEQ', 
-                                    '37477-ORDEQ'), 
+t_results <- AWQMS_Data(startdate = startdate, 
+                        enddate = enddate, 
+                        station = stations, 
                         char = c('Temperature, water') , 
                         stat_base = c('7DADM') , 
                         crit_codes = TRUE)
@@ -68,8 +78,7 @@ kendall_list <- list()
 
 #crate table with average SDADM per month
 sdadm <- t_results %>%
-  filter(QualifierAbbr %in% c("DQL=A", "DQL=B") | 
-           is.na(QualifierAbbr)) %>%
+  filter(QualifierAbbr != "DQL=C") %>%
   mutate(date = ymd(SampleStartDate),
          month = month(date),  
          yrmon = as.yearmon(date), 
@@ -154,7 +163,7 @@ kendall_results <- kendall_results %>%
   select(MLocID, significance, p.value, sen.slope)
 
 
-write.csv(kendall_results, "Umpqua ref seasonal mann kendall results.csv", row.names = FALSE)
+write.csv(kendall_results, paste("Umpqua ref seasonal mann kendall results-", Sys.Date(),".csv"), row.names = FALSE)
 
 
 
@@ -170,8 +179,7 @@ sdadm_trend <- sdadm %>%
 
 #set up some data for graphing
 sdadm_raw_trend <-t_results %>%
-  filter(QualifierAbbr %in% c("DQL=A", "DQL=B") | 
-     is.na(QualifierAbbr)) %>%
+  filter(QualifierAbbr != "DQL=C") %>%
   mutate(date = ymd(SampleStartDate),
          month = month(date),  
          yrmon = as.yearmon(date), 
@@ -214,7 +222,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
              y = strd -  0.5,
              colour = "red", size = 3.5)+
     labs(title = "7 Day Average Daily Maximum Temperature",
-         subtitle =  unique(sdadm_raw_trend$SiteDescription)[j],
+         subtitle =  unique(sdadm_raw_trend$StationDes)[j],
          x = "Year",
          y = "Temperature (degrees C)")+
     theme_bw()+
@@ -227,7 +235,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
   
   
     
-    ggsave(box, file=paste("Graphs/Box/",unique(sdadm_raw_trend$MLocID)[j], "- Box.png"), 
+    ggsave(box, file=paste("Graphs/Box/",unique(sdadm_raw_trend$MLocID)[j], "- ", Sys.Date(), "- Box.png"), 
            width = 8, height = 5, units = c("in"))
     
    
@@ -248,7 +256,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
       scale_color_brewer(palette="Set1") +
       coord_cartesian(ylim = c(12,30)) +
       labs(title = "Average 7 Day Average Daily Maximum Temperature",
-           subtitle = paste0(unique(sdadm_raw_trend$SiteDescription)[j]),
+           subtitle = paste0(unique(sdadm_raw_trend$StationDes)[j]),
            x = element_blank(),
            y = "Temperature (degrees C)")+
       theme_bw()+
@@ -295,7 +303,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
    
 
     
-    ggsave(p, file=paste("Graphs/Average/",unique(sdadm_raw_trend$MLocID)[j], "- average.png"), 
+    ggsave(p, file=paste("Graphs/Average/",unique(sdadm_raw_trend$MLocID)[j],"- ", Sys.Date(), "- average -.png"), 
            width = 8, height = 5, units = c("in"))
     
 
