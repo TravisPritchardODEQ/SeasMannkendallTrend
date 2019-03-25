@@ -79,7 +79,7 @@ kendall_list <- list()
 #crate table with average SDADM per month
 sdadm <- t_results %>%
   filter(QualifierAbbr != "DQL=C") %>%
-  mutate(date = ymd(SampleStartDate),
+  mutate(date = ymd(SampleStartDate) - days(6),
          month = month(date),  
          yrmon = as.yearmon(date), 
          year = year(date)) %>%
