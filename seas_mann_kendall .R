@@ -1,3 +1,13 @@
+###############################################################
+### If doing analysis for PUR - use the PURmethod branch.   ###
+### The difference is PUR wanted to use the 1st date for    ###
+### the 7DADM value, as opposed to the 7th date. This       ###
+### made a bunch more data available for the trend analysis.### 
+###############################################################
+
+
+
+
 library(tidyverse)
 library(lubridate)
 library(wql)
