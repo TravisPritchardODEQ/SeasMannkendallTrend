@@ -185,7 +185,9 @@ sdadm_raw_trend <-t_results %>%
          yrmon = as.yearmon(date), 
          year = year(date),
          moname = month.name[month],
-         StationDes = ifelse(StationDes == "North Myrtle Creek at Evergreen Park" , "North Myrtle at mouth", StationDes )) %>%
+         StationDes = case_when(StationDes == "North Myrtle Creek at Evergreen Park" ~ "North Myrtle at mouth", 
+                                StationDes == "Windy Creek at Glendale" ~ "Windy Creek near Glendale",
+                                TRUE ~ StationDes )) %>%
   left_join(kendall_results, by = "MLocID") %>%
   left_join(Temp_crit, by = c("FishCode" = "FishUse_code")) %>%
   filter(month(date) == 7 | month(date) == 8) %>%
