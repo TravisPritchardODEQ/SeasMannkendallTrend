@@ -74,12 +74,13 @@ t_results <- AWQMS_Data(startdate = startdate,
 #tmp_strd <- read.csv("Ump_temp_strd.csv")
 
 # Load critical tau values to assess signifigance
-load("tau_crit_values.Rdata")
+#load("tau_crit_values.Rdata")
 
 
 #create empty list to acept test results
 kendall_list <- list()
 
+temp_crit <- read.csv("temp_criteria.csv")
 
 
 
@@ -196,7 +197,7 @@ sdadm_raw_trend <-t_results %>%
          year = year(date),
          moname = month.name[month]) %>%
   left_join(kendall_results, by = "MLocID") %>%
-  left_join(Temp_crit, by = c("FishCode" = "FishUse_code")) %>%
+  left_join(temp_crit, by = c("FishCode" = "FishUse_code")) %>%
   filter(month(date) == 7 | month(date) == 8) %>%
   left_join(sdadm_count, by = c("MLocID", "year", "month")) %>%
   filter(exclude == "no") %>%
@@ -217,7 +218,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
     filter(MLocID == unique(sdadm_raw_trend$MLocID)[j]) %>%
     filter(month == 7 | month(date) == 8)
   
-  strd <- sdadm_box_plot$Temp_Criteria[[1]]
+  strd <- as.numeric(sdadm_box_plot$Temp_Criteria[[1]])
   
   
   box <- ggplot(sdadm_box_plot, aes(x = year, y = Result_Numeric, group = factor(yrmon))) +
