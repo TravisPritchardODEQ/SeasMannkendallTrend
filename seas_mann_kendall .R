@@ -10,12 +10,11 @@ library(AWQMSdata)
 
 # Load variables ----------------------------------------------------------
 
-startdate = '1949-09-15'
-enddate = '2019-02-01'
+startdate = '1999-06-24'
+enddate = '2019-10-26'
 
-stations = c('30143-ORDEQ', '30147-ORDEQ', 
-             '30154-ORDEQ', '30161-ORDEQ', 
-             '37477-ORDEQ')
+stations = c('27894-ORDEQ', '23877-ORDEQ', 
+             '23880-ORDEQ', '23874-ORDEQ')
 
 
 # 2/1/2019
@@ -78,7 +77,7 @@ kendall_list <- list()
 
 #crate table with average SDADM per month
 sdadm <- t_results %>%
-  filter(QualifierAbbr != "DQL=C") %>%
+  filter(QualifierAbbr != "DQL=C" | is.na(QualifierAbbr)) %>%
   mutate(date = ymd(SampleStartDate) - days(6),
          month = month(date),  
          yrmon = as.yearmon(date), 
@@ -88,7 +87,7 @@ sdadm <- t_results %>%
             count = n()) %>%
   ungroup() %>%
   complete(MLocID, year, month) %>%
-  filter(month == 7 | month == 8)
+  filter(month %in% c(7,8))
 
 # sdadm_wide <- sdadm %>%
 #   select(MLocID, year, month, sdadm) %>%
@@ -179,7 +178,7 @@ sdadm_trend <- sdadm %>%
 
 #set up some data for graphing
 sdadm_raw_trend <-t_results %>%
-  filter(QualifierAbbr != "DQL=C") %>%
+  filter(QualifierAbbr != "DQL=C" | is.na(QualifierAbbr)) %>%
   mutate(date = ymd(SampleStartDate),
          month = month(date),  
          yrmon = as.yearmon(date), 
@@ -189,7 +188,7 @@ sdadm_raw_trend <-t_results %>%
                                 StationDes == "Windy Creek at Glendale" ~ "Windy Creek near Glendale",
                                 TRUE ~ StationDes )) %>%
   left_join(kendall_results, by = "MLocID") %>%
-  left_join(Temp_crit, by = c("FishCode" = "FishUse_code")) %>%
+  left_join(Temp_crit,  by = "FishCode") %>%
   filter(month(date) == 7 | month(date) == 8) %>%
   left_join(sdadm_count, by = c("MLocID", "year", "month")) %>%
   filter(exclude == "no") %>%
