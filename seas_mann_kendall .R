@@ -10,11 +10,13 @@ library(AWQMSdata)
 
 # Load variables ----------------------------------------------------------
 
-startdate = '1999-06-24'
-enddate = '2019-10-26'
+startdate = '1999-01-01'
+enddate = '2022-01-01'
 
 stations = c('27894-ORDEQ', '23877-ORDEQ', 
              '23880-ORDEQ', '23874-ORDEQ')
+
+
 
 
 # 2/1/2019
@@ -59,11 +61,10 @@ t_results <- AWQMS_Data(startdate = startdate,
                         stat_base = c('7DADM') , 
                         crit_codes = TRUE)
 
-
 #tmp_strd <- read.csv("Ump_temp_strd.csv")
 
 # Load critical tau values to assess signifigance
-load("tau_crit_values.Rdata")
+#load("tau_crit_values.Rdata")
 
 
 #create empty list to acept test results
@@ -186,6 +187,7 @@ sdadm_raw_trend <-t_results %>%
          moname = month.name[month],
          StationDes = case_when(StationDes == "North Myrtle Creek at Evergreen Park" ~ "North Myrtle at mouth", 
                                 StationDes == "Windy Creek at Glendale" ~ "Windy Creek near Glendale",
+                                StationDes == "Pass Creek" ~ "Pass Creek at confluence with Canton Creek",
                                 TRUE ~ StationDes )) %>%
   left_join(kendall_results, by = "MLocID") %>%
   left_join(Temp_crit,  by = "FishCode") %>%
@@ -237,7 +239,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
   
   
     
-    ggsave(box, file=paste("Graphs/Box/",unique(sdadm_raw_trend$MLocID)[j], "- ", Sys.Date(), "- Box.png"), 
+    ggsave(box, file=paste("Graphs/",unique(sdadm_raw_trend$MLocID)[j], "- ", Sys.Date(), "- Box.png"), 
            width = 8, height = 5, units = c("in"))
     
    
@@ -305,7 +307,7 @@ for(j in 1:length(unique(sdadm_raw_trend$MLocID))){
    
 
     
-    ggsave(p, file=paste("Graphs/Average/",unique(sdadm_raw_trend$MLocID)[j],"- ", Sys.Date(), "- average -.png"), 
+    ggsave(p, file=paste("Graphs/",unique(sdadm_raw_trend$MLocID)[j],"- ", Sys.Date(), "- average -.png"), 
            width = 8, height = 5, units = c("in"))
     
 
